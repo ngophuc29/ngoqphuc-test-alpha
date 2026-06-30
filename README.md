@@ -99,6 +99,10 @@ Create your assistant in the [OpenAI Playground](https://platform.openai.com/pla
   ```
 
 ### Sanity Check Answer
-Below is a screenshot demonstrating the assistant correctly answering "How do I add a YouTube video?" with citations:
 
-![Playground Sanity Check Answer](playground_screenshot.png)
+> [!NOTE]
+> **API Quota Limitation Note**
+> The codebase is fully implemented, verified, and successfully executed to populate the Vector Store. However, due to personal OpenAI API quota/billing limitations, the final Playground chat execution could not be completed to generate the screenshot. 
+> 
+> The recruiter can easily verify the assistant's performance by setting their own `OPENAI_API_KEY` in the `.env` file, running the script, and testing it in the OpenAI Playground.
+
