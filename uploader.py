@@ -13,13 +13,20 @@ class OpenAISyncManager:
         self.client = OpenAI(api_key=config.OPENAI_API_KEY)
         self.vector_store_name = config.VECTOR_STORE_NAME
         self.assistant_id = config.OPENAI_ASSISTANT_ID
+        
+        # Handle version differences between openai v1 and v2 for vector_stores
+        if hasattr(self.client, "vector_stores"):
+            self.vector_stores_api = self.client.vector_stores
+        else:
+            self.vector_stores_api = self.client.beta.vector_stores
+
 
     def get_or_create_vector_store(self):
         """
         Find an existing vector store by name, or create a new one.
         """
         logger.info(f"Searching for vector store: {self.vector_store_name}")
-        vector_stores = self.client.beta.vector_stores.list()
+        vector_stores = self.vector_stores_api.list()
         
         for vs in vector_stores.data:
             if vs.name == self.vector_store_name:
@@ -28,7 +35,7 @@ class OpenAISyncManager:
                 
         # If not found, create it
         logger.info(f"Vector store '{self.vector_store_name}' not found. Creating a new one...")
-        vs = self.client.beta.vector_stores.create(name=self.vector_store_name)
+        vs = self.vector_stores_api.create(name=self.vector_store_name)
         logger.info(f"Created vector store: {vs.name} (ID: {vs.id})")
         return vs.id
 
@@ -165,7 +172,7 @@ class OpenAISyncManager:
             logger.info(f"Uploaded file '{filename}' as ID: {openai_file.id}")
             
             # Attach to Vector Store
-            vs_file = self.client.beta.vector_stores.files.create(
+            vs_file = self.vector_stores_api.files.create(
                 vector_store_id=vector_store_id,
                 file_id=openai_file.id
             )
