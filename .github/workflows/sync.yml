@@ -1,0 +1,32 @@
+name: Daily OptiBot Sync
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Run daily at midnight UTC
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run sync job
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          ZENDESK_URL: https://support.optisigns.com/api/v2/help_center/en-us/articles.json
+          ARTICLE_LIMIT: 30
+        run: python main.py

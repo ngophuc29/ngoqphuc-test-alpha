@@ -71,18 +71,23 @@ docker run -e API_KEY=your_gemini_api_key_here optibot-sync
 
 ---
 
-## Deployment on DigitalOcean
+## Deployment & Automation (GitHub Actions)
 
-To run this daily on the DigitalOcean App Platform:
-1. Push this repository to your GitHub.
-2. In DigitalOcean, create a new **App** using **App Platform**.
-3. Select your GitHub repository.
-4. Delete the auto-detected "Web Service" resource, click **Add a Resource**, and select **Job**.
-5. Set the trigger to **Cron Job** and configure the schedule (e.g., `0 0 * * *` for daily at midnight).
-6. Add your `API_KEY` (your Gemini API key) to the **Environment Variables**.
-7. Deploy the Job.
+This project is configured to run automatically once a day using **GitHub Actions**. This is a 100% free solution that does not require any cloud hosting costs or credit cards.
 
-- **Daily Job Logs**: [Link to your DigitalOcean Job Logs / Dashboard]
+### Setup GitHub Actions
+1. Go to your GitHub repository.
+2. Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
+3. Click **New repository secret**.
+4. Name the secret **`API_KEY`** and paste your Gemini API key as the value.
+5. Click **Add secret**.
+
+### How it runs:
+- **Automatically**: The job runs daily at midnight UTC via a cron schedule.
+- **Manually**: You can trigger the job at any time by going to the **Actions** tab, selecting the **Daily OptiBot Sync** workflow, and clicking **Run workflow**.
+
+- **Daily Job Logs**: https://github.com/ngophuc29/ngoqphuc-test-alpha/actions
+
 
 ---
 
