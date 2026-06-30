@@ -1,3 +1,4 @@
+import os
 import re
 import logging
 from datetime import datetime
@@ -94,7 +95,6 @@ def convert_to_markdown(article):
     updated_at_str = article["updated_at"]
     
     # Convert updated_at string to epoch timestamp for easy delta comparison
-    # Zendesk timestamp format: "2026-06-11T22:24:43Z"
     try:
         dt = datetime.strptime(updated_at_str, "%Y-%m-%dT%H:%M:%SZ")
     except ValueError:
@@ -137,13 +137,22 @@ def convert_to_markdown(article):
 
 def scrape_all():
     """
-    Orchestrator to fetch and convert all articles.
+    Orchestrator to fetch, convert, and save all articles to the local articles/ directory.
     """
     raw_articles = fetch_articles()
     processed_articles = []
     
+    # Ensure local directory exists
+    os.makedirs("articles", exist_ok=True)
+    
     for raw in raw_articles:
         processed = convert_to_markdown(raw)
         processed_articles.append(processed)
+        
+        # Save to local file
+        file_path = os.path.join("articles", processed["filename"])
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(processed["content"])
+        logger.info(f"Saved local file: {file_path}")
         
     return processed_articles

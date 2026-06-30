@@ -1,26 +1,28 @@
-# OptiBot Mini-Clone
+# OptiBot Mini-Clone (Gemini Edition)
 
-A lightweight, stateless daily sync job that scrapes help center articles from [support.optisigns.com](https://support.optisigns.com), converts them to clean Markdown, and syncs them to an OpenAI Vector Store for use with an OpenAI Assistant.
+A lightweight, stateless daily sync job that scrapes help center articles from [support.optisigns.com](https://support.optisigns.com), converts them to clean Markdown, and syncs them to a Google Gemini File Search Store for use with a Gemini Assistant.
+
+Using the Google Gemini API (via Google AI Studio) is **100% free** under the free tier (up to 15 RPM and 1 million TPM), making it an excellent, cost-effective alternative to OpenAI.
 
 ## Architecture & Design Decisions
 
 ### 1. Stateless Delta Detection
-To run efficiently as a daily job in ephemeral environments (like DigitalOcean Jobs or AWS ECS) without requiring an external database or persistent volume, we use a **stateless delta detection** mechanism.
-- We encode metadata in the filenames uploaded to OpenAI:
+To run efficiently as a daily job in ephemeral environments (like DigitalOcean Jobs, Railway, or AWS) without requiring an external database or persistent volume, we use a **stateless delta detection** mechanism.
+- We encode metadata in the display names of the files uploaded to the Gemini File Search Store:
   `optibot_{article_id}_{updated_timestamp}_{title_slug}.md`
-- On each run, the script queries the OpenAI Files API to get all existing files starting with `optibot_`.
-- It parses the `article_id` and `updated_timestamp` from the filenames.
+- On each run, the script queries the Gemini File Search API to get all existing documents in the store.
+- It parses the `article_id` and `updated_timestamp` from the display names.
 - It compares this remote state with the latest scraped articles from Zendesk:
-  - **Added**: If an article ID is not present in OpenAI, it is uploaded and attached to the Vector Store.
-  - **Updated**: If an article ID is present but its Zendesk `updated_at` timestamp is newer than the remote timestamp, the old file is deleted from OpenAI and the new one is uploaded.
+  - **Added**: If an article ID is not present in Gemini, it is uploaded and indexed.
+  - **Updated**: If an article ID is present but its Zendesk `updated_at` timestamp is newer than the remote timestamp, the old document is deleted from Gemini and the new one is uploaded.
   - **Skipped**: If the article ID exists and the timestamps match, nothing is done.
-  - **Deleted**: If a file exists in OpenAI but is no longer in the active scraped list, it is deleted to keep the Vector Store clean.
+  - **Deleted**: If a document exists in Gemini but is no longer in the active scraped list, it is deleted to keep the store clean.
 
 ### 2. Chunking & Embedding Strategy
-We leverage OpenAI's native **`file_search`** tool for chunking and embedding:
-- **Chunking**: OpenAI automatically parses and splits the Markdown files. It uses a default chunk size of 800 tokens with a 400-token overlap, which is highly effective for maintaining context across paragraphs.
-- **Embeddings**: Documents are embedded using OpenAI's standard high-performance embedding model.
-- **Metadata Citation**: We prepend `Article URL: <url>` to the top of every Markdown file. This ensures that when the Assistant retrieves a chunk, it always has access to the source URL and can cite it verbatim in its response.
+We leverage Gemini's native **File Search Store** for chunking and embedding:
+- **Chunking**: Gemini automatically parses and splits the Markdown files into optimal semantic chunks.
+- **Embeddings**: Documents are embedded using Google's high-performance embedding models (e.g., `gemini-embedding-2` or the default text embedding model).
+- **Metadata Citation**: We prepend `Article URL: <url>` to the top of every Markdown file. This ensures that when the Gemini model retrieves a chunk, it always has access to the source URL and can cite it verbatim in its response.
 
 ---
 
@@ -28,7 +30,7 @@ We leverage OpenAI's native **`file_search`** tool for chunking and embedding:
 
 ### Prerequisites
 - Python 3.9+ or Docker
-- An OpenAI API Key
+- A Gemini API Key (obtain a free key instantly from [Google AI Studio](https://aistudio.google.com/))
 
 ### 1. Local Python Setup
 1. Clone this repository.
@@ -48,13 +50,14 @@ We leverage OpenAI's native **`file_search`** tool for chunking and embedding:
    ```bash
    cp .env.sample .env
    ```
-5. Configure your `OPENAI_API_KEY` (and optionally `OPENAI_ASSISTANT_ID`) in `.env`.
+5. Configure your `API_KEY` (your Gemini API key) in `.env`.
 
 ### 2. Run Locally
 To run the sync job locally:
 ```bash
 python main.py
 ```
+This will scrape the articles, save them as `.md` files in a local `articles/` directory, and sync them to your Gemini File Search Store.
 
 ### 3. Run with Docker
 You can build and run the container locally:
@@ -62,8 +65,8 @@ You can build and run the container locally:
 # Build the image
 docker build -t optibot-sync .
 
-# Run the container (passing your OpenAI API Key)
-docker run --env-file .env optibot-sync
+# Run the container (passing your Gemini API Key)
+docker run -e API_KEY=your_gemini_api_key_here optibot-sync
 ```
 
 ---
@@ -72,37 +75,36 @@ docker run --env-file .env optibot-sync
 
 To run this daily on the DigitalOcean App Platform:
 1. Push this repository to your GitHub.
-2. In DigitalOcean, create a new **App**.
+2. In DigitalOcean, create a new **App** using **App Platform**.
 3. Select your GitHub repository.
-4. Choose **Job** as the resource type (instead of Web Service).
+4. Delete the auto-detected "Web Service" resource, click **Add a Resource**, and select **Job**.
 5. Set the trigger to **Cron Job** and configure the schedule (e.g., `0 0 * * *` for daily at midnight).
-6. Add your `OPENAI_API_KEY` (and optionally `OPENAI_ASSISTANT_ID`) to the **Environment Variables**.
+6. Add your `API_KEY` (your Gemini API key) to the **Environment Variables**.
 7. Deploy the Job.
 
 - **Daily Job Logs**: [Link to your DigitalOcean Job Logs / Dashboard]
 
 ---
 
-## OpenAI Assistant Configuration
+## Gemini Assistant Configuration in Google AI Studio
 
-Create your assistant in the [OpenAI Playground](https://platform.openai.com/playground) with the following settings:
+To set up your assistant in [Google AI Studio](https://aistudio.google.com/):
 
-- **Model**: `gpt-4o` or `gpt-4-turbo`
-- **Tools**: Enable **File Search**.
-- **System Instructions**:
-  ```text
-  You are OptiBot, the customer-support bot for OptiSigns.com.
-  • Tone: helpful, factual, concise.
-  • Only answer using the uploaded docs.
-  • Max 5 bullet points; else link to the doc.
-  • Cite up to 3 "Article URL:" lines per reply.
-  ```
+1. Click **Create new prompt** -> **Chat Prompt** or use the **Agent/Assistant** feature when available.
+2. Select the model **`gemini-2.5-flash`** or **`gemini-1.5-flash`**.
+3. In the **System Instructions**, paste the following verbatim:
+   ```text
+   You are OptiBot, the customer-support bot for OptiSigns.com.
+   • Tone: helpful, factual, concise.
+   • Only answer using the uploaded docs.
+   • Max 5 bullet points; else link to the doc.
+   • Cite up to 3 "Article URL:" lines per reply.
+   ```
+4. Under **Tools**, enable the **File Search** or **RAG** tool, and select the **`OptiBot Support Docs`** store.
+5. Ask: `"How do I add a YouTube video?"`.
+6. Take a screenshot of the correct response showing the answer and citations, and save it in the root of the project as `playground_screenshot.png`.
 
 ### Sanity Check Answer
+Below is a placeholder for your screenshot showing the assistant answering the sample question with cited URLs:
 
-> [!NOTE]
-> **API Quota Limitation Note**
-> The codebase is fully implemented, verified, and successfully executed to populate the Vector Store. However, due to personal OpenAI API quota/billing limitations, the final Playground chat execution could not be completed to generate the screenshot. 
-> 
-> The recruiter can easily verify the assistant's performance by setting their own `OPENAI_API_KEY` in the `.env` file, running the script, and testing it in the OpenAI Playground.
-
+![Playground Sanity Check Answer](playground_screenshot.png)

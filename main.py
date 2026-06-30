@@ -1,7 +1,7 @@
 import sys
 import logging
 import scraper
-from uploader import OpenAISyncManager
+from uploader import GeminiSyncManager
 
 # Configure logging
 logging.basicConfig(
@@ -14,7 +14,7 @@ logging.basicConfig(
 logger = logging.getLogger("optibot_sync")
 
 def main():
-    logger.info("Starting OptiBot Mini-Clone Sync Job...")
+    logger.info("Starting OptiBot Mini-Clone Sync Job (Gemini)...")
     
     try:
         # Step 1: Scrape articles from Zendesk and convert to Markdown
@@ -25,11 +25,11 @@ def main():
             logger.warning("No articles were scraped. Exiting sync job.")
             sys.exit(0)
             
-        logger.info(f"Scraped and processed {len(processed_articles)} articles.")
+        logger.info(f"Scraped, processed, and saved {len(processed_articles)} articles locally.")
         
-        # Step 2: Sync with OpenAI Vector Store
-        logger.info("Step 2: Syncing with OpenAI Vector Store...")
-        sync_manager = OpenAISyncManager()
+        # Step 2: Sync with Gemini File Search Store
+        logger.info("Step 2: Syncing with Gemini File Search Store...")
+        sync_manager = GeminiSyncManager()
         summary = sync_manager.sync_articles(processed_articles)
         
         logger.info("Sync job completed successfully!")

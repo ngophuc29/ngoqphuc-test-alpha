@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# OpenAI Config
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_ASSISTANT_ID = os.getenv("OPENAI_ASSISTANT_ID")
+# Gemini Config
+# The prompt specifies the Docker env var is API_KEY
+API_KEY = os.getenv("API_KEY") or os.getenv("GEMINI_API_KEY")
 
 # Vector Store Config
 VECTOR_STORE_NAME = "OptiBot Support Docs"
@@ -17,5 +17,5 @@ ARTICLE_LIMIT = int(os.getenv("ARTICLE_LIMIT", "30"))
 
 # Validate required variables
 def validate_config():
-    if not OPENAI_API_KEY:
-        raise ValueError("OPENAI_API_KEY environment variable is required. Please set it in your environment or .env file.")
+    if not API_KEY:
+        raise ValueError("API_KEY (or GEMINI_API_KEY) environment variable is required. Please set it in your environment or .env file.")
